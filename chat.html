@@ -81,7 +81,7 @@
   </style>
 </head>
 <body>
-  <!-- Page de connexion -->
+  <!-- Page d'authentification -->
   <div id="authPage" class="auth-page">
     <button id="loginButton" class="auth-button">Se connecter</button>
     <button id="createAccountButton" class="auth-button">Créer un compte</button>
@@ -101,6 +101,16 @@
       <input type="text" id="messageInput" placeholder="Écris ton message..." />
       <button onclick="sendMessage()">Envoyer</button>
     </div>
+  </div>
+
+  <!-- Page de création de compte -->
+  <div id="createAccountPage" style="display: none;">
+    <h3>Créer un compte</h3>
+    <input type="email" id="newEmail" placeholder="Email" required />
+    <input type="password" id="newPassword" placeholder="Mot de passe" required />
+    <input type="file" id="profilePic" accept="image/*" />
+    <button id="submitCreateAccount">Créer mon compte</button>
+    <button id="backToAuthButton">Retour à la connexion</button>
   </div>
 
   <!-- Firebase SDK -->
@@ -128,15 +138,16 @@
 
     let currentUser = null;
 
-    // Fonction pour afficher la page de chat après la connexion
+    // Afficher la page de chat après la connexion
     function showChatPage(user) {
       document.getElementById("authPage").style.display = "none";
+      document.getElementById("createAccountPage").style.display = "none";
       document.getElementById("chatPage").style.display = "block";
       document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
       loadMessages();
     }
 
-    // Affichage et gestion des messages
+    // Charger les messages dans le chat
     function loadMessages() {
       const chatBox = document.getElementById("chat");
       db.collection("messages")
@@ -159,7 +170,7 @@
         });
     }
 
-    // Fonction pour envoyer un message
+    // Envoyer un message
     function sendMessage() {
       const messageInput = document.getElementById("messageInput");
       const message = messageInput.value.trim();
@@ -175,7 +186,53 @@
       messageInput.value = "";
     }
 
-    // Gestion des événements d'authentification
+    // Gestion de la page de création de compte
+    document.getElementById("createAccountButton").onclick = function() {
+      document.getElementById("authPage").style.display = "none";
+      document.getElementById("createAccountPage").style.display = "block";
+    };
+
+    // Retour à la page de connexion
+    document.getElementById("backToAuthButton").onclick = function() {
+      document.getElementById("createAccountPage").style.display = "none";
+      document.getElementById("authPage").style.display = "block";
+    };
+
+    // Créer un compte
+    document.getElementById("submitCreateAccount").onclick = function() {
+      const email = document.getElementById("newEmail").value;
+      const password = document.getElementById("newPassword").value;
+      const fileInput = document.getElementById("profilePic");
+
+      if (!email || !password) {
+        alert("Tous les champs sont obligatoires !");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const storageRef = storage.ref().child("profile_pics/" + file.name);
+
+      storageRef.put(file).then(snapshot => {
+        snapshot.ref.getDownloadURL().then(url => {
+          auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+              currentUser = userCredential.user;
+              currentUser.updateProfile({
+                displayName: email.split('@')[0], // Utilise le nom avant "@"
+                photoURL: url
+              });
+              showChatPage(currentUser);
+            })
+            .catch((error) => {
+              alert("Erreur lors de la création du compte : " + error.message);
+            });
+        });
+      }).catch((error) => {
+        alert("Erreur lors du téléchargement de la photo de profil : " + error.message);
+      });
+    };
+
+    // Connexion
     document.getElementById("loginButton").onclick = function() {
       const email = prompt("Entrez votre email :");
       const password = prompt("Entrez votre mot de passe :");
@@ -189,58 +246,27 @@
         });
     };
 
-    document.getElementById("createAccountButton").onclick = function() {
-      const email = prompt("Entrez votre email :");
-      const password = prompt("Choisissez un mot de passe :");
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = "image/*";
-      fileInput.onchange = function(event) {
-        const file = event.target.files[0];
-        const storageRef = storage.ref().child("profile_pics/" + file.name);
-        storageRef.put(file).then(snapshot => {
-          snapshot.ref.getDownloadURL().then(url => {
-            auth.createUserWithEmailAndPassword(email, password)
-              .then((userCredential) => {
-                currentUser = userCredential.user;
-                currentUser.updateProfile({
-                  displayName: email.split('@')[0], 
-                  photoURL: url
-                });
-                showChatPage(currentUser);
-              })
-              .catch((error) => {
-                alert("Erreur lors de la création du compte : " + error.message);
-              });
-          });
-        }).catch((error) => {
-          alert("Erreur lors du téléchargement de la photo de profil : " + error.message);
-        });
-      };
-      fileInput.click();
-    };
-
+    // Continuer en tant qu'invité
     document.getElementById("guestButton").onclick = function() {
-      currentUser = { displayName: "Invité" + Math.floor(Math.random() * 1000), photoURL: "pdp.png" };
+      currentUser = { displayName: "Invité" + Math.floor(Math.random() * 1000), photoURL: "defaultProfile.png" };
       showChatPage(currentUser);
     };
 
+    // Déconnexion
     document.getElementById("logoutButton").onclick = function() {
       auth.signOut().then(() => {
-        currentUser = null;
         document.getElementById("chatPage").style.display = "none";
         document.getElementById("authPage").style.display = "block";
       });
     };
 
-    // Vérifier si l'utilisateur est déjà connecté au chargement de la page
-    auth.onAuthStateChanged((userCredential) => {
-      if (userCredential) {
-        currentUser = userCredential.user;
-        showChatPage(currentUser);
+    // Vérifier l'état de l'utilisateur à l'ouverture
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        showChatPage(user);
       } else {
-        document.getElementById("authPage").style.display = "flex";
-        document.getElementById("chatPage").style.display = "none";
+        document.getElementById("authPage").style.display = "block";
       }
     });
   </script>
