@@ -16,17 +16,16 @@
       --reaction-color: #444;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1e1e1e;
-        --fg: #2c2c2c;
-        --primary: #4a90e2;
-        --text: #f1f1f1;
-        --mine: #375e3f;
-        --message-bg: #3a3a3a;
-        --reaction-bg: #444;
-        --reaction-color: #ddd;
-      }
+    /* Thème sombre */
+    .dark {
+      --bg: #1e1e1e;
+      --fg: #2c2c2c;
+      --primary: #4a90e2;
+      --text: #f1f1f1;
+      --mine: #375e3f;
+      --message-bg: #3a3a3a;
+      --reaction-bg: #444;
+      --reaction-color: #ddd;
     }
 
     * {
@@ -391,9 +390,23 @@
     }
 
     function toggleTheme() {
-      document.documentElement.classList.toggle('dark');
-      localStorage.setItem("theme", document.documentElement.classList.contains('dark') ? "dark" : "light");
+      const htmlElement = document.documentElement;
+      htmlElement.classList.toggle('dark');
+      localStorage.setItem("theme", htmlElement.classList.contains('dark') ? "dark" : "light");
     }
+
+    window.onload = () => {
+      const savedPseudo = localStorage.getItem("pseudo");
+      if (savedPseudo) {
+        currentUser = { displayName: savedPseudo };
+        showChatPage(currentUser);
+      }
+
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add('dark');
+      }
+    };
 
     document.getElementById("guestButton").onclick = () => {
       const pseudo = document.getElementById("pseudoInput").value.trim();
@@ -404,19 +417,6 @@
       currentUser = { displayName: pseudo };
       showChatPage(currentUser);
       localStorage.setItem("pseudo", pseudo);
-    };
-
-    window.onload = () => {
-      const savedPseudo = localStorage.getItem("pseudo");
-      if (savedPseudo) {
-        currentUser = { displayName: savedPseudo };
-        showChatPage(currentUser);
-      }
-
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        document.documentElement.classList.add(savedTheme);
-      }
     };
   </script>
 
