@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat temps réel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background-color: #4a90e2;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: white;
+    }
+    .message {
+      margin-bottom: 1rem;
+      background: #e3f2fd;
+      padding: 0.5rem;
+      border-radius: 5px;
+    }
+    footer {
+      display: flex;
+      padding: 1rem;
+      background-color: #eee;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    button {
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #4a90e2;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Chat en temps réel</h1>
+  <div id="pseudo"></div>
+</header>
+
+<div id="chat"></div>
+
+<footer>
+  <input type="text" id="messageInput" placeholder="Écris un message..." />
+  <button onclick="sendMessage()">Envoyer</button>
+</footer>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // ✅ Ta config Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCQhw69gH9pZDngyp82OS4nKHy_MhbdoE0",
+    authDomain: "chat-14381.firebaseapp.com",
+    projectId: "chat-14381",
+    storageBucket: "chat-14381.firebasestorage.app",
+    messagingSenderId: "114036601860",
+    appId: "1:114036601860:web:3d792be8e5be3ad1c23151",
+    measurementId: "G-W1W14M3J92"
+  };
+
+  // 🔥 Initialisation
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let pseudo = prompt("Entre ton pseudo :") || "Anonyme";
+  document.getElementById("pseudo").innerText = "Connecté en tant que : " + pseudo;
+
+  const chatBox = document.getElementById("chat");
+
+  function sendMessage() {
+    const input = document.getElementById("messageInput");
+    const message = input.value.trim();
+    if (message === '') return;
+
+    db.collection("messages").add({
+      pseudo: pseudo,
+      message: message,
+      timestamp: new Date()
+    });
+
+    input.value = '';
+    input.focus();
+  }
+
+  db.collection("messages")
+    .orderBy("timestamp")
+    .onSnapshot(snapshot => {
+      chatBox.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "message";
+        div.innerHTML = `<strong>${data.pseudo}</strong> : ${data.message} <br>
+                         <span style="font-size:0.8em;color:#555">${new Date(data.timestamp.toDate()).toLocaleTimeString()}</span>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    });
+
+  document.getElementById("messageInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") sendMessage();
+  });
+</script>
+
+</body>
+</html>
