@@ -5,37 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat en temps réel</title>
   <style>
-    /* Ton style reste inchangé, ajoute cette partie pour l'image de profil */
+    body {
+      font-family: 'Arial', sans-serif;
+    }
+
     .profile-img {
       width: 35px;
       height: 35px;
       border-radius: 50%;
-      margin-right: 8px;
+      margin-right: 10px;
+    }
+
+    .message-block {
+      max-width: 70%;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .message-block.mine {
+      background-color: #dcf8c6;
+      align-self: flex-end;
+    }
+
+    .message-block.other {
+      background-color: #f1f1f1;
+      align-self: flex-start;
+    }
+
+    .header, .footer, .auth-page {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px;
+    }
+
+    .auth-button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #4a90e2;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #chat {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 15px;
+      height: 60vh;
+      overflow-y: auto;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #357abd;
     }
   </style>
 </head>
 <body>
+  <!-- Page de connexion -->
   <div id="authPage" class="auth-page">
-    <button class="auth-button" id="loginButton">Se connecter</button>
-    <button class="auth-button" id="createAccountButton">Créer un compte</button>
-    <button class="auth-button" id="guestButton">Continuer en invité</button>
+    <button id="loginButton" class="auth-button">Se connecter</button>
+    <button id="createAccountButton" class="auth-button">Créer un compte</button>
+    <button id="guestButton" class="auth-button">Continuer en invité</button>
   </div>
 
-  <header id="header" style="display: none;">
-    <div>
-      <strong>Chat en temps réel</strong><br/>
-      <span id="pseudo"></span>
+  <!-- Page de chat -->
+  <div id="chatPage" style="display: none;">
+    <div class="header">
+      <strong id="pseudo"></strong>
+      <button id="logoutButton">Déconnexion</button>
     </div>
-    <button id="logoutButton">Déconnexion</button>
-    <button id="toggleTheme">🌙</button>
-  </header>
 
-  <div id="chat" style="display: none;"></div>
+    <div id="chat"></div>
 
-  <footer id="footer" style="display: none;">
-    <input type="text" id="messageInput" placeholder="Écris ton message..." />
-    <button onclick="sendMessage()">Envoyer</button>
-  </footer>
+    <div class="footer">
+      <input type="text" id="messageInput" placeholder="Écris ton message..." />
+      <button onclick="sendMessage()">Envoyer</button>
+    </div>
+  </div>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -56,189 +122,127 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
     const auth = firebase.auth();
+    const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // Fonction d'authentification et de connexion
-    let user = null;
+    let currentUser = null;
 
-    // Fonction pour afficher la page de connexion
-    function showAuthPage() {
-      document.getElementById("authPage").style.display = "flex";
-      document.getElementById("header").style.display = "none";
-      document.getElementById("chat").style.display = "none";
-      document.getElementById("footer").style.display = "none";
-
-      document.getElementById("loginButton").onclick = function () {
-        const email = prompt("Entrez votre email :");
-        const password = prompt("Entrez votre mot de passe :");
-
-        auth.signInWithEmailAndPassword(email, password).then((userCredential) => {
-          user = userCredential.user;
-          showChatPage(user.displayName, user.photoURL || 'defaultProfile.png');
-        }).catch((error) => {
-          alert("Erreur de connexion : " + error.message);
-        });
-      };
-
-      document.getElementById("createAccountButton").onclick = function () {
-        const email = prompt("Entrez votre email :");
-        const password = prompt("Choisissez un mot de passe :");
-
-        // Demander une photo de profil
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "image/*";
-        fileInput.onchange = function (event) {
-          const file = event.target.files[0];
-          const storageRef = storage.ref().child("profile_pics/" + file.name);
-          storageRef.put(file).then(snapshot => {
-            snapshot.ref.getDownloadURL().then(url => {
-              createAccount(email, password, url);
-            });
-          }).catch(error => {
-            alert("Erreur lors du téléchargement de la photo de profil : " + error.message);
-          });
-        };
-        fileInput.click();
-      };
-
-      document.getElementById("guestButton").onclick = function () {
-        user = { displayName: "Invité " + Math.floor(Math.random() * 1000) };
-        showChatPage(user.displayName, 'defaultProfile.png');
-      };
-    }
-
-    // Créer un compte avec photo de profil
-    function createAccount(email, password, photoURL) {
-      auth.createUserWithEmailAndPassword(email, password).then((userCredential) => {
-        user = userCredential.user;
-        user.updateProfile({
-          displayName: email.split('@')[0], // Utilisation de l'email pour le pseudo
-          photoURL: photoURL || 'defaultProfile.png'
-        });
-        showChatPage(user.displayName, user.photoURL);
-      }).catch((error) => {
-        alert("Erreur de création de compte : " + error.message);
-      });
-    }
-
-    // Fonction pour afficher la page de chat
-    function showChatPage(pseudo, photoURL) {
+    // Fonction pour afficher la page de chat après la connexion
+    function showChatPage(user) {
       document.getElementById("authPage").style.display = "none";
-      document.getElementById("header").style.display = "flex";
-      document.getElementById("chat").style.display = "block";
-      document.getElementById("footer").style.display = "flex";
+      document.getElementById("chatPage").style.display = "block";
+      document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
+      loadMessages();
+    }
 
-      document.getElementById("pseudo").textContent = `Connecté en tant que : ${pseudo}`;
-
-      // Fonction de déconnexion
-      document.getElementById("logoutButton").onclick = function () {
-        auth.signOut().then(() => {
-          user = null;
-          showAuthPage();
-        });
-      };
-
-      // Fonction d'envoi de message
+    // Affichage et gestion des messages
+    function loadMessages() {
       const chatBox = document.getElementById("chat");
-      function sendMessage() {
-        const input = document.getElementById("messageInput");
-        const message = input.value.trim();
-        if (message === '') return;
-
-        db.collection("messages").add({
-          pseudo: pseudo,
-          message: message,
-          photoURL: photoURL,
-          timestamp: new Date()
-        });
-
-        input.value = '';
-        input.focus();
-      }
-
       db.collection("messages")
         .orderBy("timestamp")
         .onSnapshot(snapshot => {
           chatBox.innerHTML = "";
-          let lastAuthor = null;
-          let lastBubble = null;
-
           snapshot.forEach(doc => {
             const data = doc.data();
-            const isMine = data.pseudo === pseudo;
-            const isSameAuthor = data.pseudo === lastAuthor;
-
-            if (isSameAuthor && lastBubble) {
-              const msg = document.createElement("div");
-              msg.className = "sub-message";
-              msg.textContent = data.message;
-              lastBubble.querySelector(".messages").appendChild(msg);
-            } else {
-              const bubble = document.createElement("div");
-              bubble.className = `message-block ${isMine ? "mine" : "other"}`;
-
-              bubble.innerHTML = `
-                <div class="author">
-                  <img src="${data.photoURL || 'defaultProfile.png'}" class="profile-img" />
-                  ${data.pseudo}<span class="time">${new Date(data.timestamp.toDate()).toLocaleTimeString()}</span>
-                </div>
-                <div class="messages">
-                  <div class="sub-message">${data.message}</div>
-                </div>
-              `;
-
-              chatBox.appendChild(bubble);
-              lastBubble = bubble;
-            }
-
-            lastAuthor = data.pseudo;
+            const messageElement = document.createElement("div");
+            messageElement.className = `message-block ${data.pseudo === currentUser.displayName ? 'mine' : 'other'}`;
+            messageElement.innerHTML = `
+              <div>
+                <img src="${data.photoURL}" class="profile-img" />
+                <strong>${data.pseudo}</strong>: ${data.message}
+              </div>
+            `;
+            chatBox.appendChild(messageElement);
           });
-
           chatBox.scrollTop = chatBox.scrollHeight;
         });
+    }
 
-      document.getElementById("messageInput").addEventListener("keydown", function (e) {
-        if (e.key === "Enter") sendMessage();
+    // Fonction pour envoyer un message
+    function sendMessage() {
+      const messageInput = document.getElementById("messageInput");
+      const message = messageInput.value.trim();
+      if (message === "") return;
+
+      db.collection("messages").add({
+        pseudo: currentUser.displayName,
+        message: message,
+        photoURL: currentUser.photoURL || "defaultProfile.png",
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
+
+      messageInput.value = "";
     }
 
-    // 🌙 Toggle thème
-    const toggleButton = document.getElementById("toggleTheme");
-    const body = document.body;
-
-    function applyTheme(theme) {
-      if (theme === "dark") {
-        body.classList.add("dark");
-        toggleButton.textContent = "☀️";
-      } else {
-        body.classList.remove("dark");
-        toggleButton.textContent = "🌙";
-      }
-      localStorage.setItem("theme", theme);
-    }
-
-    toggleButton.onclick = () => {
-      const newTheme = body.classList.contains("dark") ? "light" : "dark";
-      applyTheme(newTheme);
+    // Gestion des événements d'authentification
+    document.getElementById("loginButton").onclick = function() {
+      const email = prompt("Entrez votre email :");
+      const password = prompt("Entrez votre mot de passe :");
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          currentUser = userCredential.user;
+          showChatPage(currentUser);
+        })
+        .catch((error) => {
+          alert("Erreur de connexion : " + error.message);
+        });
     };
 
-    // Appliquer thème au chargement
-    const savedTheme = localStorage.getItem("theme") || "light";
-    applyTheme(savedTheme);
+    document.getElementById("createAccountButton").onclick = function() {
+      const email = prompt("Entrez votre email :");
+      const password = prompt("Choisissez un mot de passe :");
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*";
+      fileInput.onchange = function(event) {
+        const file = event.target.files[0];
+        const storageRef = storage.ref().child("profile_pics/" + file.name);
+        storageRef.put(file).then(snapshot => {
+          snapshot.ref.getDownloadURL().then(url => {
+            auth.createUserWithEmailAndPassword(email, password)
+              .then((userCredential) => {
+                currentUser = userCredential.user;
+                currentUser.updateProfile({
+                  displayName: email.split('@')[0], 
+                  photoURL: url
+                });
+                showChatPage(currentUser);
+              })
+              .catch((error) => {
+                alert("Erreur lors de la création du compte : " + error.message);
+              });
+          });
+        }).catch((error) => {
+          alert("Erreur lors du téléchargement de la photo de profil : " + error.message);
+        });
+      };
+      fileInput.click();
+    };
 
-    // Vérifier si l'utilisateur est déjà connecté
+    document.getElementById("guestButton").onclick = function() {
+      currentUser = { displayName: "Invité" + Math.floor(Math.random() * 1000), photoURL: "pdp.png" };
+      showChatPage(currentUser);
+    };
+
+    document.getElementById("logoutButton").onclick = function() {
+      auth.signOut().then(() => {
+        currentUser = null;
+        document.getElementById("chatPage").style.display = "none";
+        document.getElementById("authPage").style.display = "block";
+      });
+    };
+
+    // Vérifier si l'utilisateur est déjà connecté au chargement de la page
     auth.onAuthStateChanged((userCredential) => {
       if (userCredential) {
-        user = userCredential.user;
-        showChatPage(user.displayName, user.photoURL || 'defaultProfile.png');
+        currentUser = userCredential.user;
+        showChatPage(currentUser);
       } else {
-        showAuthPage();
+        document.getElementById("authPage").style.display = "flex";
+        document.getElementById("chatPage").style.display = "none";
       }
     });
-
   </script>
 </body>
 </html>
