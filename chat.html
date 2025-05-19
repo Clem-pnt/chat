@@ -69,9 +69,35 @@
     button:hover {
       background-color: #357abd;
     }
+
+    /* Toast */
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #4CAF50;
+      color: white;
+      text-align: center;
+      border-radius: 8px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1;
+      left: 50%;
+      bottom: 30px;
+      font-size: 17px;
+      transform: translateX(-50%);
+      transition: visibility 0s, opacity 0.5s linear;
+      opacity: 0;
+    }
+    #toast.show {
+      visibility: visible;
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
+  <!-- Toast de notification -->
+  <div id="toast"></div>
+
   <!-- Page d'authentification -->
   <div id="authPage" class="auth-page">
     <button id="loginButton" class="auth-button">Se connecter</button>
@@ -160,8 +186,6 @@
       const message = messageInput.value.trim();
       if (message === "") return;
 
-      console.log("Message envoyé par :", currentUser);
-
       db.collection("messages").add({
         pseudo: currentUser.displayName,
         message: message,
@@ -188,15 +212,18 @@
       const fileInput = document.getElementById("profilePic");
 
       if (!email || !password) {
-        alert("Tous les champs sont obligatoires !");
+        showToast("Tous les champs sont obligatoires !");
         return;
       }
 
       try {
-        const file = fileInput.files[0];
-        const storageRef = storage.ref().child("profile_pics/" + file.name);
-        const snapshot = await storageRef.put(file);
-        const photoURL = await snapshot.ref.getDownloadURL();
+        let photoURL = "defaultProfile.png";
+        if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const storageRef = storage.ref().child("profile_pics/" + file.name);
+          const snapshot = await storageRef.put(file);
+          photoURL = await snapshot.ref.getDownloadURL();
+        }
 
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         currentUser = userCredential.user;
@@ -206,10 +233,10 @@
           photoURL: photoURL
         });
 
-        alert("🎉 Compte créé avec succès !");
+        showToast("🎉 Compte créé avec succès !");
         showChatPage(currentUser);
       } catch (error) {
-        alert("Erreur : " + error.message);
+        showToast("Erreur : " + error.message);
         console.error(error);
       }
     };
@@ -223,12 +250,15 @@
           showChatPage(currentUser);
         })
         .catch(error => {
-          alert("Erreur de connexion : " + error.message);
+          showToast("Erreur de connexion : " + error.message);
         });
     };
 
     document.getElementById("guestButton").onclick = () => {
-      currentUser = { displayName: "Invité" + Math.floor(Math.random() * 1000), photoURL: "defaultProfile.png" };
+      currentUser = {
+        displayName: "Invité" + Math.floor(Math.random() * 1000),
+        photoURL: "defaultProfile.png"
+      };
       showChatPage(currentUser);
     };
 
@@ -247,6 +277,15 @@
         document.getElementById("authPage").style.display = "block";
       }
     });
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = "show";
+      setTimeout(() => {
+        toast.className = toast.className.replace("show", "");
+      }, 3000);
+    }
   </script>
 </body>
 </html>
