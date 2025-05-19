@@ -231,6 +231,29 @@
       visibility: visible;
       opacity: 1;
     }
+
+    .reply-box {
+      background-color: var(--message-bg);
+      border-left: 4px solid var(--primary);
+      margin-bottom: 10px;
+      padding: 10px;
+      margin-left: 20px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .reply-box .message-info {
+      font-weight: bold;
+    }
+
+    .reply-button {
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--primary);
+      position: absolute;
+      top: 5px;
+      right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -315,7 +338,7 @@
 
     function replyToMessage(messageId, messageText) {
       const input = document.getElementById("messageInput");
-      input.value = `@${messageId}: ${messageText}\n`;
+      input.value = `Répondre à ${messageText}`;
       input.focus();
       input.dataset.replyTo = messageId; // Stocker l'ID du message auquel on répond
     }
@@ -357,11 +380,15 @@
             msgDiv.className = `message-block ${data.pseudo === currentUser.displayName ? 'mine' : 'other'}`;
             msgDiv.innerHTML = `<strong>${data.pseudo}</strong><br>${data.message}`;
 
+            // Affichage de la réponse si elle existe
             if (data.replyingTo) {
-              const replyText = document.createElement("div");
-              replyText.className = "reply-text";
-              replyText.textContent = `Répond à : ${data.replyingTo.message}`;
-              msgDiv.appendChild(replyText);
+              const replyBox = document.createElement("div");
+              replyBox.className = "reply-box";
+              replyBox.innerHTML = `
+                <div class="message-info">Réponse à ${data.replyingTo.pseudo} :</div>
+                <div class="message-text">${data.replyingTo.message}</div>
+              `;
+              msgDiv.appendChild(replyBox);
             }
 
             const reactBar = document.createElement("div");
@@ -386,7 +413,8 @@
             }
 
             const replyBtn = document.createElement("button");
-            replyBtn.textContent = "Répondre";
+            replyBtn.innerHTML = "↩️";
+            replyBtn.className = "reply-button";
             replyBtn.onclick = () => replyToMessage(doc.id, data.message);
             msgDiv.appendChild(replyBtn);
 
