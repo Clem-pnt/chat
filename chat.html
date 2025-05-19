@@ -34,23 +34,8 @@
       border-bottom: 1px solid #ddd;
     }
 
-    .header button {
-      background-color: #4a90e2;
-      border: none;
-      padding: 10px;
-      color: white;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s;
-    }
-
-    .header button:hover {
-      background-color: #357abd;
-    }
-
     /* Auth page */
-    .auth-page, .create-account-page {
+    .auth-page {
       padding: 20px;
       text-align: center;
     }
@@ -202,8 +187,6 @@
       <div class="header">Chat en temps réel</div>
       <input type="text" id="pseudoInput" class="input" placeholder="Entrez votre pseudo" />
       <button id="guestButton" class="auth-button">Continuer en invité</button>
-      <button id="loginButton" class="auth-button">Se connecter</button>
-      <button id="createAccountButton" class="auth-button">Créer un compte</button>
     </div>
 
     <!-- Page de chat -->
@@ -217,16 +200,6 @@
         <input type="text" id="messageInput" placeholder="Écris ton message..." />
         <button onclick="sendMessage()">Envoyer</button>
       </div>
-    </div>
-
-    <!-- Page de création de compte -->
-    <div id="createAccountPage" class="create-account-page" style="display: none;">
-      <h3>Créer un compte</h3>
-      <input type="email" id="newEmail" class="input" placeholder="Email" required />
-      <input type="password" id="newPassword" class="input" placeholder="Mot de passe" required />
-      <input type="file" id="profilePic" accept="image/*" class="input" />
-      <button id="submitCreateAccount">Créer mon compte</button>
-      <button id="backToAuthButton">Retour à la connexion</button>
     </div>
   </div>
 
@@ -255,7 +228,6 @@
 
     function showChatPage(user) {
       document.getElementById("authPage").style.display = "none";
-      document.getElementById("createAccountPage").style.display = "none";
       document.getElementById("chatPage").style.display = "flex";
       document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
       loadMessages();
@@ -304,25 +276,17 @@
         showToast("Veuillez entrer un pseudo !");
         return;
       }
-      auth.signInAnonymously()
-        .then(() => {
-          currentUser = {
-            displayName: pseudo,
-            photoURL: "defaultProfile.png"
-          };
-          showChatPage(currentUser);
-        })
-        .catch(error => {
-          showToast("Erreur de connexion anonyme : " + error.message);
-          console.error(error);
-        });
+      currentUser = {
+        displayName: pseudo,
+        photoURL: "defaultProfile.png"
+      };
+      showChatPage(currentUser);
     };
 
     document.getElementById("logoutButton").onclick = () => {
-      auth.signOut().then(() => {
-        document.getElementById("chatPage").style.display = "none";
-        document.getElementById("authPage").style.display = "block";
-      });
+      currentUser = null;
+      document.getElementById("chatPage").style.display = "none";
+      document.getElementById("authPage").style.display = "block";
     };
 
     function showToast(message) {
