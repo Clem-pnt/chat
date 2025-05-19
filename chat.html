@@ -6,20 +6,20 @@
   <title>DiscLite</title>
   <style>
     :root {
-      --primary: #4a90e2;
       --bg: #f4f6f9;
-      --bg-alt: #ffffff;
-      --text: #000000;
+      --fg: #fff;
+      --primary: #4a90e2;
+      --text: #000;
       --mine: #dcf8c6;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
+        --bg: #1e1e1e;
+        --fg: #2c2c2c;
         --primary: #4a90e2;
-        --bg: #121212;
-        --bg-alt: #1e1e1e;
-        --text: #ffffff;
-        --mine: #2e7d32;
+        --text: #f1f1f1;
+        --mine: #375e3f;
       }
     }
 
@@ -31,27 +31,23 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: 'Arial', sans-serif;
-      background-color: var(--bg);
+      font-family: Arial, sans-serif;
+      background: var(--bg);
       color: var(--text);
+      transition: background 0.3s, color 0.3s;
     }
 
     .page {
-      display: flex;
+      display: none;
       flex-direction: column;
       height: 100%;
       width: 100%;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.3s ease;
     }
 
-    .page.active {
+    .active {
+      display: flex;
       opacity: 1;
-      pointer-events: auto;
-      position: relative;
     }
 
     #authPage {
@@ -60,10 +56,10 @@
     }
 
     .auth-box {
-      background-color: var(--bg-alt);
+      background-color: var(--fg);
       padding: 30px;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       width: 100%;
       max-width: 400px;
       text-align: center;
@@ -81,8 +77,6 @@
       border: 1px solid #ccc;
       border-radius: 30px;
       font-size: 16px;
-      background-color: var(--bg);
-      color: var(--text);
     }
 
     .auth-button {
@@ -94,22 +88,18 @@
       border: none;
       border-radius: 30px;
       cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .auth-button:hover {
-      background-color: #357abd;
     }
 
     #chatPage {
-      background-color: var(--bg-alt);
+      flex-direction: column;
+      background-color: var(--fg);
     }
 
     .header-chat {
       background-color: var(--primary);
       padding: 15px;
       text-align: center;
-      color: #fff;
+      color: white;
       font-size: 20px;
     }
 
@@ -117,21 +107,19 @@
       flex-grow: 1;
       overflow-y: auto;
       padding: 20px;
-      background-color: var(--bg);
       display: flex;
       flex-direction: column;
+      gap: 10px;
     }
 
     .message-block {
-      background-color: var(--bg-alt);
+      background-color: var(--fg);
       padding: 10px;
-      margin-bottom: 10px;
       border-radius: 12px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       max-width: 70%;
-      opacity: 0;
-      transform: translateY(20px);
-      animation: fadeInUp 0.3s forwards;
+      position: relative;
+      transition: all 0.3s ease;
     }
 
     .mine {
@@ -143,24 +131,11 @@
       align-self: flex-start;
     }
 
-    .timestamp {
-      font-size: 12px;
-      color: #888;
-      margin-top: 4px;
-    }
-
-    @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
     .footer {
       display: flex;
       padding: 15px;
       border-top: 1px solid #eee;
-      background-color: var(--bg-alt);
+      background-color: var(--bg);
     }
 
     #messageInput {
@@ -170,8 +145,6 @@
       border: 1px solid #ccc;
       margin-right: 10px;
       font-size: 16px;
-      background-color: var(--bg);
-      color: var(--text);
     }
 
     button.send {
@@ -184,12 +157,26 @@
       cursor: pointer;
     }
 
-    #users {
-      padding: 10px;
-      font-size: 14px;
-      background-color: var(--bg-alt);
-      border-top: 1px solid #ccc;
-      text-align: center;
+    .reaction-bar {
+      margin-top: 5px;
+      font-size: 18px;
+      display: flex;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .edit-delete {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      gap: 5px;
+    }
+
+    .edit-delete span {
+      color: gray;
     }
 
     #toast {
@@ -218,125 +205,152 @@
 </head>
 <body>
 
-  <div id="toast"></div>
+<div id="toast"></div>
 
-  <div id="authPage" class="page active">
-    <div class="auth-box">
-      <h1>DiscLite</h1>
-      <input type="text" id="pseudoInput" class="input" placeholder="Entrez votre pseudo" />
-      <button id="guestButton" class="auth-button">Continuer en invité</button>
-    </div>
+<!-- Connexion -->
+<div id="authPage" class="page active">
+  <div class="auth-box">
+    <h1>DiscLite</h1>
+    <input type="text" id="pseudoInput" class="input" placeholder="Entrez votre pseudo" />
+    <button id="guestButton" class="auth-button">Continuer en invité</button>
   </div>
+</div>
 
-  <div id="chatPage" class="page">
-    <div class="header-chat">
-      <strong id="pseudo"></strong>
-    </div>
-    <div id="chat" class="chat-box"></div>
-    <div id="users">Utilisateurs en ligne : <span id="userList">...</span></div>
-    <div class="footer">
-      <input type="text" id="messageInput" placeholder="Écris ton message..." />
-      <button class="send" onclick="sendMessage()">Envoyer</button>
-    </div>
+<!-- Chat -->
+<div id="chatPage" class="page">
+  <div class="header-chat">
+    <strong id="pseudo"></strong>
   </div>
+  <div id="chat" class="chat-box"></div>
+  <div class="footer">
+    <input type="text" id="messageInput" placeholder="Écris ton message..." />
+    <button class="send" onclick="sendMessage()">Envoyer</button>
+  </div>
+</div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCQhw69gH9pZDngyp82OS4nKHy_MhbdoE0",
-      authDomain: "chat-14381.firebaseapp.com",
-      projectId: "chat-14381",
-      storageBucket: "chat-14381.appspot.com",
-      messagingSenderId: "114036601860",
-      appId: "1:114036601860:web:3d792be8e5be3ad1c23151"
-    };
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCQhw69gH9pZDngyp82OS4nKHy_MhbdoE0",
+    authDomain: "chat-14381.firebaseapp.com",
+    projectId: "chat-14381",
+    storageBucket: "chat-14381.appspot.com",
+    messagingSenderId: "114036601860",
+    appId: "1:114036601860:web:3d792be8e5be3ad1c23151"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    let currentUser = null;
-    let userDocRef = null;
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  let currentUser = null;
 
-    function showToast(message) {
-      const toast = document.getElementById("toast");
-      toast.textContent = message;
-      toast.className = "show";
-      setTimeout(() => {
-        toast.className = toast.className.replace("show", "");
-      }, 3000);
-    }
+  function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.className = "show";
+    setTimeout(() => {
+      toast.className = toast.className.replace("show", "");
+    }, 3000);
+  }
 
-    function showChatPage(user) {
-      document.getElementById("authPage").classList.remove("active");
-      document.getElementById("chatPage").classList.add("active");
-      document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
-      setTimeout(() => {
-        document.getElementById("messageInput").focus();
-      }, 100);
-      loadMessages();
-      registerUser(user.displayName);
-      watchUsers();
-    }
+  function showChatPage(user) {
+    document.getElementById("authPage").classList.remove("active");
+    document.getElementById("chatPage").classList.add("active");
+    document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
+    loadMessages();
+    setTimeout(() => {
+      document.getElementById("messageInput").focus();
+    }, 300);
+  }
 
-    function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const msg = input.value.trim();
-      if (msg === "") return;
-      db.collection("messages").add({
-        pseudo: currentUser.displayName,
-        message: msg,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  function sendMessage() {
+    const input = document.getElementById("messageInput");
+    const msg = input.value.trim();
+    if (msg === "") return;
+    db.collection("messages").add({
+      pseudo: currentUser.displayName,
+      message: msg,
+      reactions: {},
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    input.value = "";
+  }
+
+  function addReaction(docId, emoji) {
+    const ref = db.collection("messages").doc(docId);
+    db.runTransaction(t => {
+      return t.get(ref).then(doc => {
+        const data = doc.data();
+        const reactions = data.reactions || {};
+        reactions[emoji] = (reactions[emoji] || 0) + 1;
+        t.update(ref, { reactions });
       });
-      input.value = "";
-    }
+    });
+  }
 
-    function loadMessages() {
-      const chatBox = document.getElementById("chat");
-      db.collection("messages")
-        .orderBy("timestamp")
-        .onSnapshot(snapshot => {
-          chatBox.innerHTML = "";
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const date = data.timestamp?.toDate();
-            const timeString = date
-              ? `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : "Envoi...";
-            const msgDiv = document.createElement("div");
-            msgDiv.className = `message-block ${data.pseudo === currentUser.displayName ? 'mine' : 'other'}`;
-            msgDiv.innerHTML = `<div>${data.pseudo}: ${data.message}</div><div class="timestamp">${timeString}</div>`;
-            chatBox.appendChild(msgDiv);
+  function editMessage(docId, oldMessage) {
+    const newText = prompt("Modifier le message :", oldMessage);
+    if (newText && newText.trim()) {
+      db.collection("messages").doc(docId).update({ message: newText.trim() });
+    }
+  }
+
+  function deleteMessage(docId) {
+    if (confirm("Supprimer ce message ?")) {
+      db.collection("messages").doc(docId).delete();
+    }
+  }
+
+  function loadMessages() {
+    const chatBox = document.getElementById("chat");
+    db.collection("messages")
+      .orderBy("timestamp")
+      .onSnapshot(snapshot => {
+        chatBox.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const msgDiv = document.createElement("div");
+          msgDiv.className = `message-block ${data.pseudo === currentUser.displayName ? 'mine' : 'other'}`;
+          msgDiv.innerHTML = `<strong>${data.pseudo}</strong><br>${data.message}`;
+
+          // Réactions
+          const reactBar = document.createElement("div");
+          reactBar.className = "reaction-bar";
+          ["👍", "❤️", "😂"].forEach(emoji => {
+            const btn = document.createElement("span");
+            const count = data.reactions?.[emoji] || 0;
+            btn.textContent = `${emoji}${count > 0 ? " " + count : ""}`;
+            btn.onclick = () => addReaction(doc.id, emoji);
+            reactBar.appendChild(btn);
           });
-          chatBox.scrollTop = chatBox.scrollHeight;
+          msgDiv.appendChild(reactBar);
+
+          // Edit / Delete
+          if (data.pseudo === currentUser.displayName) {
+            const editBar = document.createElement("div");
+            editBar.className = "edit-delete";
+            editBar.innerHTML = `<span onclick="editMessage('${doc.id}', \`${data.message}\`)">✏️</span>
+                                 <span onclick="deleteMessage('${doc.id}')">🗑️</span>`;
+            msgDiv.appendChild(editBar);
+          }
+
+          chatBox.appendChild(msgDiv);
         });
-    }
-
-    function registerUser(name) {
-      userDocRef = db.collection("onlineUsers").doc(name);
-      userDocRef.set({ timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-      window.addEventListener("beforeunload", () => {
-        userDocRef.delete();
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
-    }
+  }
 
-    function watchUsers() {
-      const userList = document.getElementById("userList");
-      db.collection("onlineUsers").onSnapshot(snapshot => {
-        const names = snapshot.docs.map(doc => doc.id);
-        userList.textContent = names.join(", ");
-      });
+  document.getElementById("guestButton").onclick = () => {
+    const pseudo = document.getElementById("pseudoInput").value.trim();
+    if (!pseudo) {
+      showToast("Veuillez entrer un pseudo !");
+      return;
     }
-
-    document.getElementById("guestButton").onclick = () => {
-      const pseudo = document.getElementById("pseudoInput").value.trim();
-      if (!pseudo) {
-        showToast("Veuillez entrer un pseudo !");
-        return;
-      }
-      currentUser = { displayName: pseudo };
-      showChatPage(currentUser);
-    };
-  </script>
+    currentUser = { displayName: pseudo };
+    showChatPage(currentUser);
+  };
+</script>
 </body>
 </html>
