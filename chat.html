@@ -16,7 +16,6 @@
       --reaction-color: #444;
     }
 
-    /* Thème sombre */
     .dark {
       --bg: #1e1e1e;
       --fg: #2c2c2c;
@@ -301,21 +300,24 @@
     function sendMessage() {
       const input = document.getElementById("messageInput");
       const msg = input.value.trim();
+      const replyTo = input.dataset.replyTo || null; // Ajouter la référence à la réponse
       if (msg === "") return;
       db.collection("messages").add({
         pseudo: currentUser.displayName,
         message: msg,
         reactions: {},
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        replyingTo: null
+        replyingTo: replyTo
       });
       input.value = "";
+      delete input.dataset.replyTo; // Réinitialiser la référence de la réponse
     }
 
     function replyToMessage(messageId, messageText) {
       const input = document.getElementById("messageInput");
       input.value = `@${messageId}: ${messageText}\n`;
       input.focus();
+      input.dataset.replyTo = messageId; // Stocker l'ID du message auquel on répond
     }
 
     function addReaction(docId, emoji) {
@@ -382,6 +384,11 @@
                                    <span onclick="deleteMessage('${doc.id}')">🗑️</span>`;
               msgDiv.appendChild(editBar);
             }
+
+            const replyBtn = document.createElement("button");
+            replyBtn.textContent = "Répondre";
+            replyBtn.onclick = () => replyToMessage(doc.id, data.message);
+            msgDiv.appendChild(replyBtn);
 
             chatBox.appendChild(msgDiv);
           });
