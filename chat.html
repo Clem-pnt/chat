@@ -253,7 +253,44 @@
       position: absolute;
       top: 5px;
       right: 10px;
+      background: none;
+      border: none;
+      font-size: 18px;
     }
+
+    .reply-button:hover {
+      color: #666;
+    }
+
+    .reply-btn-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 5px 10px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
+    }
+
+    .reply-btn-container .reply-button {
+      font-size: 18px;
+      padding: 5px 10px;
+      border-radius: 50%;
+      background-color: transparent;
+      border: 1px solid var(--primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .reply-btn-container .reply-button:hover {
+      background-color: var(--primary);
+      color: white;
+    }
+
   </style>
 </head>
 <body>
@@ -336,9 +373,9 @@
       delete input.dataset.replyTo; // Réinitialiser la référence de la réponse
     }
 
-    function replyToMessage(messageId, messageText) {
+    function replyToMessage(messageId, messageText, pseudo) {
       const input = document.getElementById("messageInput");
-      input.value = `Répondre à ${messageText}`;
+      input.value = `Répondre à ${pseudo}: ${messageText}`;
       input.focus();
       input.dataset.replyTo = messageId; // Stocker l'ID du message auquel on répond
     }
@@ -386,74 +423,70 @@
               replyBox.className = "reply-box";
               replyBox.innerHTML = `
                 <div class="message-info">Réponse à ${data.replyingTo.pseudo} :</div>
-                <div class="message-text">${data.replyingTo.message}</div>
+                <p>${data.replyingTo.message}</p>
               `;
               msgDiv.appendChild(replyBox);
             }
 
-            const reactBar = document.createElement("div");
-            reactBar.className = "reaction-bar";
-            ["👍", "❤️", "😂"].forEach(emoji => {
-              const btn = document.createElement("div");
-              btn.className = "reaction";
-              const count = data.reactions?.[emoji] || 0;
-              btn.textContent = `${emoji} ${count}`;
-              btn.onclick = () => addReaction(doc.id, emoji);
-              reactBar.appendChild(btn);
+            // Réactions
+            const reactionBar = document.createElement("div");
+            reactionBar.className = "reaction-bar";
+            const emojis = ["👍", "❤️", "😂"];
+            emojis.forEach(emoji => {
+              const reactionDiv = document.createElement("div");
+              reactionDiv.className = "reaction";
+              reactionDiv.innerHTML = `
+                <span>${emoji}</span><span class="count">${data.reactions[emoji] || 0}</span>
+              `;
+              reactionDiv.onclick = () => addReaction(doc.id, emoji);
+              reactionBar.appendChild(reactionDiv);
             });
+            msgDiv.appendChild(reactionBar);
 
-            msgDiv.appendChild(reactBar);
+            // Ajouter bouton de réponse
+            const replyButton = document.createElement("button");
+            replyButton.className = "reply-button";
+            replyButton.innerHTML = "↩️";
+            replyButton.onclick = () => replyToMessage(doc.id, data.message, data.pseudo);
+            msgDiv.appendChild(replyButton);
 
+            // Ajouter bouton de suppression/modification
+            const editDeleteDiv = document.createElement("div");
+            editDeleteDiv.className = "edit-delete";
             if (data.pseudo === currentUser.displayName) {
-              const editBar = document.createElement("div");
-              editBar.className = "edit-delete";
-              editBar.innerHTML = `<span onclick="editMessage('${doc.id}', \`${data.message}\`)">✏️</span>
-                                   <span onclick="deleteMessage('${doc.id}')">🗑️</span>`;
-              msgDiv.appendChild(editBar);
-            }
+              const deleteSpan = document.createElement("span");
+              deleteSpan.textContent = "Supprimer";
+              deleteSpan.onclick = () => deleteMessage(doc.id);
+              editDeleteDiv.appendChild(deleteSpan);
 
-            const replyBtn = document.createElement("button");
-            replyBtn.innerHTML = "↩️";
-            replyBtn.className = "reply-button";
-            replyBtn.onclick = () => replyToMessage(doc.id, data.message);
-            msgDiv.appendChild(replyBtn);
+              const editSpan = document.createElement("span");
+              editSpan.textContent = "Modifier";
+              editSpan.onclick = () => editMessage(doc.id, data.message);
+              editDeleteDiv.appendChild(editSpan);
+            }
+            msgDiv.appendChild(editDeleteDiv);
 
             chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
           });
-          chatBox.scrollTop = chatBox.scrollHeight;
         });
     }
 
     function toggleTheme() {
-      const htmlElement = document.documentElement;
-      htmlElement.classList.toggle('dark');
-      localStorage.setItem("theme", htmlElement.classList.contains('dark') ? "dark" : "light");
+      document.body.classList.toggle("dark");
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
     }
 
-    window.onload = () => {
-      const savedPseudo = localStorage.getItem("pseudo");
-      if (savedPseudo) {
-        currentUser = { displayName: savedPseudo };
-        showChatPage(currentUser);
-      }
-
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme === "dark") {
-        document.documentElement.classList.add('dark');
-      }
-    };
-
-    document.getElementById("guestButton").onclick = () => {
+    document.getElementById("guestButton").addEventListener("click", () => {
       const pseudo = document.getElementById("pseudoInput").value.trim();
-      if (!pseudo) {
-        showToast("Veuillez entrer un pseudo !");
-        return;
-      }
+      if (!pseudo) return alert("Veuillez entrer un pseudo");
       currentUser = { displayName: pseudo };
       showChatPage(currentUser);
-      localStorage.setItem("pseudo", pseudo);
-    };
-  </script>
+    });
 
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  </script>
 </body>
 </html>
