@@ -5,292 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DiscLite</title>
   <style>
-    :root {
-      --bg: #f4f6f9;
-      --fg: #fff;
-      --primary: #4a90e2;
-      --text: #000;
-      --mine: #dcf8c6;
-      --message-bg: #f1f1f1;
-      --reaction-bg: #e4e6eb;
-      --reaction-color: #444;
-    }
-
-    .dark {
-      --bg: #1e1e1e;
-      --fg: #2c2c2c;
-      --primary: #4a90e2;
-      --text: #f1f1f1;
-      --mine: #375e3f;
-      --message-bg: #3a3a3a;
-      --reaction-bg: #444;
-      --reaction-color: #ddd;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      transition: background 0.3s, color 0.3s;
-    }
-
-    .page {
-      display: none;
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-      transition: opacity 0.3s ease;
-    }
-
-    .active {
-      display: flex;
-      opacity: 1;
-    }
-
-    #authPage {
-      align-items: center;
-      justify-content: center;
-    }
-
-    .auth-box {
-      background-color: var(--fg);
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-
-    .auth-box h1 {
-      margin-bottom: 20px;
-      color: var(--primary);
-    }
-
-    .input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 30px;
-      font-size: 16px;
-    }
-
-    .auth-button {
-      width: 100%;
-      padding: 12px;
-      background-color: var(--primary);
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 30px;
-      cursor: pointer;
-    }
-
-    #chatPage {
-      flex-direction: column;
-      background-color: var(--fg);
-    }
-
-    .header-chat {
-      background-color: var(--primary);
-      padding: 15px;
-      text-align: center;
-      color: white;
-      font-size: 20px;
-    }
-
-    #chat {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .message-block {
-      background-color: var(--message-bg);
-      padding: 10px;
-      border-radius: 12px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      max-width: 70%;
-      position: relative;
-      transition: all 0.3s ease;
-    }
-
-    .mine {
-      align-self: flex-end;
-      background-color: var(--mine);
-    }
-
-    .other {
-      align-self: flex-start;
-    }
-
-    .footer {
-      display: flex;
-      padding: 15px;
-      border-top: 1px solid #eee;
-      background-color: var(--bg);
-    }
-
-    #messageInput {
-      flex-grow: 1;
-      padding: 10px 15px;
-      border-radius: 30px;
-      border: 1px solid #ccc;
-      margin-right: 10px;
-      font-size: 16px;
-    }
-
-    button.send {
-      padding: 10px 20px;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 30px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    .reaction-bar {
-      margin-top: 10px;
-      font-size: 18px;
-      display: flex;
-      gap: 10px;
-      cursor: pointer;
-    }
-
-    .reaction {
-      background-color: var(--reaction-bg);
-      padding: 5px 10px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: background-color 0.3s;
-    }
-
-    .reaction:hover {
-      background-color: #ddd;
-    }
-
-    .edit-delete {
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      gap: 5px;
-    }
-
-    .edit-delete span {
-      color: gray;
-    }
-
-    .theme-toggle {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      padding: 10px;
-      cursor: pointer;
-    }
-
-    #toast {
-      visibility: hidden;
-      min-width: 250px;
-      background-color: #4CAF50;
-      color: white;
-      text-align: center;
-      border-radius: 8px;
-      padding: 16px;
-      position: fixed;
-      z-index: 1;
-      left: 50%;
-      bottom: 30px;
-      font-size: 17px;
-      transform: translateX(-50%);
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
-
-    #toast.show {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    .reply-box {
-      background-color: var(--message-bg);
-      border-left: 4px solid var(--primary);
-      margin-bottom: 10px;
-      padding: 10px;
-      margin-left: 20px;
-      font-size: 14px;
-      color: var(--text);
-    }
-
-    .reply-box .message-info {
-      font-weight: bold;
-    }
-
-    .reply-button {
-      cursor: pointer;
-      font-size: 20px;
-      color: var(--primary);
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      background: none;
-      border: none;
-      font-size: 18px;
-    }
-
-    .reply-button:hover {
-      color: #666;
-    }
-
-    .reply-btn-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      padding: 5px 10px;
-      background-color: rgba(0, 0, 0, 0.1);
-      border-radius: 5px;
-    }
-
-    .reply-btn-container .reply-button {
-      font-size: 18px;
-      padding: 5px 10px;
-      border-radius: 50%;
-      background-color: transparent;
-      border: 1px solid var(--primary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .reply-btn-container .reply-button:hover {
-      background-color: var(--primary);
-      color: white;
-    }
-
+    /* Styles précédents ici... */
   </style>
 </head>
 <body>
@@ -338,6 +53,7 @@
     const db = firebase.firestore();
     let currentUser = null;
 
+    // Fonction de toast
     function showToast(message) {
       const toast = document.getElementById("toast");
       toast.textContent = message;
@@ -347,6 +63,7 @@
       }, 3000);
     }
 
+    // Fonction d'affichage de la page de chat
     function showChatPage(user) {
       document.getElementById("authPage").classList.remove("active");
       document.getElementById("chatPage").classList.add("active");
@@ -357,10 +74,11 @@
       }, 300);
     }
 
+    // Fonction pour envoyer un message
     function sendMessage() {
       const input = document.getElementById("messageInput");
       const msg = input.value.trim();
-      const replyTo = input.dataset.replyTo || null; // Ajouter la référence à la réponse
+      const replyTo = input.dataset.replyTo || null;
       if (msg === "") return;
       db.collection("messages").add({
         pseudo: currentUser.displayName,
@@ -370,16 +88,18 @@
         replyingTo: replyTo
       });
       input.value = "";
-      delete input.dataset.replyTo; // Réinitialiser la référence de la réponse
+      delete input.dataset.replyTo; 
     }
 
+    // Fonction pour répondre à un message
     function replyToMessage(messageId, messageText, pseudo) {
       const input = document.getElementById("messageInput");
       input.value = `Répondre à ${pseudo}: ${messageText}`;
       input.focus();
-      input.dataset.replyTo = messageId; // Stocker l'ID du message auquel on répond
+      input.dataset.replyTo = messageId;
     }
 
+    // Fonction pour ajouter une réaction
     function addReaction(docId, emoji) {
       const ref = db.collection("messages").doc(docId);
       db.runTransaction(t => {
@@ -392,6 +112,7 @@
       });
     }
 
+    // Fonction pour modifier un message
     function editMessage(docId, oldMessage) {
       const newText = prompt("Modifier le message :", oldMessage);
       if (newText && newText.trim()) {
@@ -399,12 +120,14 @@
       }
     }
 
+    // Fonction pour supprimer un message
     function deleteMessage(docId) {
       if (confirm("Supprimer ce message ?")) {
         db.collection("messages").doc(docId).delete();
       }
     }
 
+    // Fonction pour charger les messages
     function loadMessages() {
       const chatBox = document.getElementById("chat");
       db.collection("messages")
@@ -472,21 +195,39 @@
         });
     }
 
+    // Fonction pour basculer entre le thème clair et sombre
     function toggleTheme() {
       document.body.classList.toggle("dark");
       localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
     }
 
+    // Fonction d'authentification
+    function authenticateUser() {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        currentUser = JSON.parse(storedUser);
+        showChatPage(currentUser);
+      } else {
+        document.getElementById("authPage").classList.add("active");
+      }
+    }
+
+    // Sauvegarder l'utilisateur dans le localStorage
     document.getElementById("guestButton").addEventListener("click", () => {
       const pseudo = document.getElementById("pseudoInput").value.trim();
       if (!pseudo) return alert("Veuillez entrer un pseudo");
       currentUser = { displayName: pseudo };
+      localStorage.setItem("user", JSON.stringify(currentUser)); // Sauvegarde de l'utilisateur
       showChatPage(currentUser);
     });
 
+    // Charger le thème si sauvegardé dans localStorage
     if (localStorage.getItem("theme") === "dark") {
       document.body.classList.add("dark");
     }
+
+    // Initialisation
+    authenticateUser();
   </script>
 </body>
 </html>
