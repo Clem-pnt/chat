@@ -11,6 +11,9 @@
       --primary: #4a90e2;
       --text: #000;
       --mine: #dcf8c6;
+      --message-bg: #f1f1f1;
+      --reaction-bg: #e4e6eb;
+      --reaction-color: #444;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -20,6 +23,9 @@
         --primary: #4a90e2;
         --text: #f1f1f1;
         --mine: #375e3f;
+        --message-bg: #3a3a3a;
+        --reaction-bg: #444;
+        --reaction-color: #ddd;
       }
     }
 
@@ -113,7 +119,7 @@
     }
 
     .message-block {
-      background-color: var(--fg);
+      background-color: var(--message-bg);
       padding: 10px;
       border-radius: 12px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -158,11 +164,25 @@
     }
 
     .reaction-bar {
-      margin-top: 5px;
+      margin-top: 10px;
       font-size: 18px;
       display: flex;
-      gap: 5px;
+      gap: 10px;
       cursor: pointer;
+    }
+
+    .reaction {
+      background-color: var(--reaction-bg);
+      padding: 5px 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .reaction:hover {
+      background-color: #ddd;
     }
 
     .edit-delete {
@@ -177,6 +197,18 @@
 
     .edit-delete span {
       color: gray;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      padding: 10px;
+      cursor: pointer;
     }
 
     #toast {
@@ -205,152 +237,188 @@
 </head>
 <body>
 
-<div id="toast"></div>
+  <div id="toast"></div>
 
-<!-- Connexion -->
-<div id="authPage" class="page active">
-  <div class="auth-box">
-    <h1>DiscLite</h1>
-    <input type="text" id="pseudoInput" class="input" placeholder="Entrez votre pseudo" />
-    <button id="guestButton" class="auth-button">Continuer en invité</button>
+  <button class="theme-toggle" onclick="toggleTheme()">🌙/🌞</button>
+
+  <!-- Connexion -->
+  <div id="authPage" class="page active">
+    <div class="auth-box">
+      <h1>DiscLite</h1>
+      <input type="text" id="pseudoInput" class="input" placeholder="Entrez votre pseudo" />
+      <button id="guestButton" class="auth-button">Continuer en invité</button>
+    </div>
   </div>
-</div>
 
-<!-- Chat -->
-<div id="chatPage" class="page">
-  <div class="header-chat">
-    <strong id="pseudo"></strong>
+  <!-- Chat -->
+  <div id="chatPage" class="page">
+    <div class="header-chat">
+      <strong id="pseudo"></strong>
+    </div>
+    <div id="chat" class="chat-box"></div>
+    <div class="footer">
+      <input type="text" id="messageInput" placeholder="Écris ton message..." />
+      <button class="send" onclick="sendMessage()">Envoyer</button>
+    </div>
   </div>
-  <div id="chat" class="chat-box"></div>
-  <div class="footer">
-    <input type="text" id="messageInput" placeholder="Écris ton message..." />
-    <button class="send" onclick="sendMessage()">Envoyer</button>
-  </div>
-</div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCQhw69gH9pZDngyp82OS4nKHy_MhbdoE0",
-    authDomain: "chat-14381.firebaseapp.com",
-    projectId: "chat-14381",
-    storageBucket: "chat-14381.appspot.com",
-    messagingSenderId: "114036601860",
-    appId: "1:114036601860:web:3d792be8e5be3ad1c23151"
-  };
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQhw69gH9pZDngyp82OS4nKHy_MhbdoE0",
+      authDomain: "chat-14381.firebaseapp.com",
+      projectId: "chat-14381",
+      storageBucket: "chat-14381.appspot.com",
+      messagingSenderId: "114036601860",
+      appId: "1:114036601860:web:3d792be8e5be3ad1c23151"
+    };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  let currentUser = null;
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let currentUser = null;
 
-  function showToast(message) {
-    const toast = document.getElementById("toast");
-    toast.textContent = message;
-    toast.className = "show";
-    setTimeout(() => {
-      toast.className = toast.className.replace("show", "");
-    }, 3000);
-  }
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = "show";
+      setTimeout(() => {
+        toast.className = toast.className.replace("show", "");
+      }, 3000);
+    }
 
-  function showChatPage(user) {
-    document.getElementById("authPage").classList.remove("active");
-    document.getElementById("chatPage").classList.add("active");
-    document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
-    loadMessages();
-    setTimeout(() => {
-      document.getElementById("messageInput").focus();
-    }, 300);
-  }
+    function showChatPage(user) {
+      document.getElementById("authPage").classList.remove("active");
+      document.getElementById("chatPage").classList.add("active");
+      document.getElementById("pseudo").textContent = `Connecté en tant que : ${user.displayName}`;
+      loadMessages();
+      setTimeout(() => {
+        document.getElementById("messageInput").focus();
+      }, 300);
+    }
 
-  function sendMessage() {
-    const input = document.getElementById("messageInput");
-    const msg = input.value.trim();
-    if (msg === "") return;
-    db.collection("messages").add({
-      pseudo: currentUser.displayName,
-      message: msg,
-      reactions: {},
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    input.value = "";
-  }
-
-  function addReaction(docId, emoji) {
-    const ref = db.collection("messages").doc(docId);
-    db.runTransaction(t => {
-      return t.get(ref).then(doc => {
-        const data = doc.data();
-        const reactions = data.reactions || {};
-        reactions[emoji] = (reactions[emoji] || 0) + 1;
-        t.update(ref, { reactions });
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const msg = input.value.trim();
+      if (msg === "") return;
+      db.collection("messages").add({
+        pseudo: currentUser.displayName,
+        message: msg,
+        reactions: {},
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        replyingTo: null
       });
-    });
-  }
-
-  function editMessage(docId, oldMessage) {
-    const newText = prompt("Modifier le message :", oldMessage);
-    if (newText && newText.trim()) {
-      db.collection("messages").doc(docId).update({ message: newText.trim() });
+      input.value = "";
     }
-  }
 
-  function deleteMessage(docId) {
-    if (confirm("Supprimer ce message ?")) {
-      db.collection("messages").doc(docId).delete();
+    function replyToMessage(messageId, messageText) {
+      const input = document.getElementById("messageInput");
+      input.value = `@${messageId}: ${messageText}\n`;
+      input.focus();
     }
-  }
 
-  function loadMessages() {
-    const chatBox = document.getElementById("chat");
-    db.collection("messages")
-      .orderBy("timestamp")
-      .onSnapshot(snapshot => {
-        chatBox.innerHTML = "";
-        snapshot.forEach(doc => {
+    function addReaction(docId, emoji) {
+      const ref = db.collection("messages").doc(docId);
+      db.runTransaction(t => {
+        return t.get(ref).then(doc => {
           const data = doc.data();
-          const msgDiv = document.createElement("div");
-          msgDiv.className = `message-block ${data.pseudo === currentUser.displayName ? 'mine' : 'other'}`;
-          msgDiv.innerHTML = `<strong>${data.pseudo}</strong><br>${data.message}`;
-
-          // Réactions
-          const reactBar = document.createElement("div");
-          reactBar.className = "reaction-bar";
-          ["👍", "❤️", "😂"].forEach(emoji => {
-            const btn = document.createElement("span");
-            const count = data.reactions?.[emoji] || 0;
-            btn.textContent = `${emoji}${count > 0 ? " " + count : ""}`;
-            btn.onclick = () => addReaction(doc.id, emoji);
-            reactBar.appendChild(btn);
-          });
-          msgDiv.appendChild(reactBar);
-
-          // Edit / Delete
-          if (data.pseudo === currentUser.displayName) {
-            const editBar = document.createElement("div");
-            editBar.className = "edit-delete";
-            editBar.innerHTML = `<span onclick="editMessage('${doc.id}', \`${data.message}\`)">✏️</span>
-                                 <span onclick="deleteMessage('${doc.id}')">🗑️</span>`;
-            msgDiv.appendChild(editBar);
-          }
-
-          chatBox.appendChild(msgDiv);
+          const reactions = data.reactions || {};
+          reactions[emoji] = (reactions[emoji] || 0) + 1;
+          t.update(ref, { reactions });
         });
-        chatBox.scrollTop = chatBox.scrollHeight;
       });
-  }
-
-  document.getElementById("guestButton").onclick = () => {
-    const pseudo = document.getElementById("pseudoInput").value.trim();
-    if (!pseudo) {
-      showToast("Veuillez entrer un pseudo !");
-      return;
     }
-    currentUser = { displayName: pseudo };
-    showChatPage(currentUser);
-  };
-</script>
+
+    function editMessage(docId, oldMessage) {
+      const newText = prompt("Modifier le message :", oldMessage);
+      if (newText && newText.trim()) {
+        db.collection("messages").doc(docId).update({ message: newText.trim() });
+      }
+    }
+
+    function deleteMessage(docId) {
+      if (confirm("Supprimer ce message ?")) {
+        db.collection("messages").doc(docId).delete();
+      }
+    }
+
+    function loadMessages() {
+      const chatBox = document.getElementById("chat");
+      db.collection("messages")
+        .orderBy("timestamp")
+        .onSnapshot(snapshot => {
+          chatBox.innerHTML = "";
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `message-block ${data.pseudo === currentUser.displayName ? 'mine' : 'other'}`;
+            msgDiv.innerHTML = `<strong>${data.pseudo}</strong><br>${data.message}`;
+
+            if (data.replyingTo) {
+              const replyText = document.createElement("div");
+              replyText.className = "reply-text";
+              replyText.textContent = `Répond à : ${data.replyingTo.message}`;
+              msgDiv.appendChild(replyText);
+            }
+
+            const reactBar = document.createElement("div");
+            reactBar.className = "reaction-bar";
+            ["👍", "❤️", "😂"].forEach(emoji => {
+              const btn = document.createElement("div");
+              btn.className = "reaction";
+              const count = data.reactions?.[emoji] || 0;
+              btn.textContent = `${emoji} ${count}`;
+              btn.onclick = () => addReaction(doc.id, emoji);
+              reactBar.appendChild(btn);
+            });
+
+            msgDiv.appendChild(reactBar);
+
+            if (data.pseudo === currentUser.displayName) {
+              const editBar = document.createElement("div");
+              editBar.className = "edit-delete";
+              editBar.innerHTML = `<span onclick="editMessage('${doc.id}', \`${data.message}\`)">✏️</span>
+                                   <span onclick="deleteMessage('${doc.id}')">🗑️</span>`;
+              msgDiv.appendChild(editBar);
+            }
+
+            chatBox.appendChild(msgDiv);
+          });
+          chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem("theme", document.documentElement.classList.contains('dark') ? "dark" : "light");
+    }
+
+    document.getElementById("guestButton").onclick = () => {
+      const pseudo = document.getElementById("pseudoInput").value.trim();
+      if (!pseudo) {
+        showToast("Veuillez entrer un pseudo !");
+        return;
+      }
+      currentUser = { displayName: pseudo };
+      showChatPage(currentUser);
+      localStorage.setItem("pseudo", pseudo);
+    };
+
+    window.onload = () => {
+      const savedPseudo = localStorage.getItem("pseudo");
+      if (savedPseudo) {
+        currentUser = { displayName: savedPseudo };
+        showChatPage(currentUser);
+      }
+
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        document.documentElement.classList.add(savedTheme);
+      }
+    };
+  </script>
+
 </body>
 </html>
